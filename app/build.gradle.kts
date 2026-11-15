@@ -54,30 +54,34 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
+    // Koin BOM & Modules
     implementation(platform("io.insert-koin:koin-bom:4.2.0"))
-
-    // Koin Core & Android
     implementation("io.insert-koin:koin-android")
-
-    // Koin for Jetpack Compose & ViewModels (includes koinViewModel & koinInject)
     implementation("io.insert-koin:koin-androidx-compose")
-
-    // Koin for Navigation Compose (optional: for shared ViewModels across NavGraph)
     implementation("io.insert-koin:koin-compose-viewmodel-navigation")
 
-    // Navigation & Serialization
+    // Navigation & Serialization (Unified to a single version)
     implementation("androidx.navigation:navigation-compose:2.8.8")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
-    // Networking, Coroutines & Images
+    // Coroutines & Images
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-    implementation("io.ktor:ktor-client-android:2.3.8")
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     // UI Effects & Maps
     implementation("dev.chrisbanes.haze:haze:1.7.2")
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
+
+    // Jetpack DataStore Preferences (Fixed for token storage)
+    implementation("androidx.datastore:datastore-preferences:1.1.2")
+
+    // Ktor Client (Unified to version 2.3.8)
+    implementation("io.ktor:ktor-client-core:2.3.8")
+    implementation("io.ktor:ktor-client-android:2.3.8")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.8")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.8")
+    implementation("io.ktor:ktor-client-logging:2.3.8")
 
     // Testing
     testImplementation(libs.junit)
@@ -86,6 +90,4 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-
-
 }
