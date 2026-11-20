@@ -1,11 +1,16 @@
 package com.example.bus_booking.navigation
 
-
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,6 +28,9 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
+private const val SCREEN_TRANSITION_MS = 320
+private const val SCREEN_FADE_OUT_MS = 220
+
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -33,6 +41,34 @@ object Routes {
 
     fun seatsRoute(tripId: Int) = "seats/$tripId"
 }
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.screenEnter() =
+    slideIntoContainer(
+        towards = AnimatedContentTransitionScope.SlideDirection.Start,
+        animationSpec = tween(durationMillis = SCREEN_TRANSITION_MS, easing = FastOutSlowInEasing),
+        initialOffset = { fullWidth -> fullWidth / 3 }
+    ) + fadeIn(animationSpec = tween(durationMillis = SCREEN_TRANSITION_MS))
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.screenExit() =
+    slideOutOfContainer(
+        towards = AnimatedContentTransitionScope.SlideDirection.Start,
+        animationSpec = tween(durationMillis = SCREEN_TRANSITION_MS, easing = FastOutSlowInEasing),
+        targetOffset = { fullWidth -> -fullWidth / 6 }
+    ) + fadeOut(animationSpec = tween(durationMillis = SCREEN_FADE_OUT_MS))
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.screenPopEnter() =
+    slideIntoContainer(
+        towards = AnimatedContentTransitionScope.SlideDirection.End,
+        animationSpec = tween(durationMillis = SCREEN_TRANSITION_MS, easing = FastOutSlowInEasing),
+        initialOffset = { fullWidth -> -fullWidth / 6 }
+    ) + fadeIn(animationSpec = tween(durationMillis = SCREEN_TRANSITION_MS))
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.screenPopExit() =
+    slideOutOfContainer(
+        towards = AnimatedContentTransitionScope.SlideDirection.End,
+        animationSpec = tween(durationMillis = SCREEN_TRANSITION_MS, easing = FastOutSlowInEasing),
+        targetOffset = { fullWidth -> fullWidth / 3 }
+    ) + fadeOut(animationSpec = tween(durationMillis = SCREEN_FADE_OUT_MS))
 
 @Composable
 fun AppNavigation(
@@ -46,7 +82,11 @@ fun AppNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
+        enterTransition = { screenEnter() },
+        exitTransition = { screenExit() },
+        popEnterTransition = { screenPopEnter() },
+        popExitTransition = { screenPopExit() }
     ) {
         composable(Routes.LOGIN) {
             LoginScreen(
@@ -56,7 +96,9 @@ fun AppNavigation(
                     }
                 },
                 onNavigateToRegister = {
-                    navController.navigate(Routes.REGISTER)
+                    navController.navigate(Routes.REGISTER) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -65,7 +107,7 @@ fun AppNavigation(
             RegisterScreen(
                 onRegisterSuccess = {
                     navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.REGISTER) { inclusive = true }
+                        popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 },
                 onNavigateToLogin = {
@@ -80,10 +122,14 @@ fun AppNavigation(
             HomeSearchScreen(
                 viewModel = sharedSearchViewModel,
                 onSearchComplete = {
-                    navController.navigate(Routes.RESULTS)
+                    navController.navigate(Routes.RESULTS) {
+                        launchSingleTop = true
+                    }
                 },
                 onOpenMyBookings = {
-                    navController.navigate(Routes.MY_BOOKINGS)
+                    navController.navigate(Routes.MY_BOOKINGS) {
+                        launchSingleTop = true
+                    }
                 },
                 onLogout = {
                     scope.launch {
@@ -106,7 +152,9 @@ fun AppNavigation(
                 viewModel = sharedSearchViewModel,
                 onBack = { navController.popBackStack() },
                 onSelectTrip = { tripId ->
-                    navController.navigate(Routes.seatsRoute(tripId))
+                    navController.navigate(Routes.seatsRoute(tripId)) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -122,6 +170,7 @@ fun AppNavigation(
                 onBookingConfirmed = {
                     navController.navigate(Routes.MY_BOOKINGS) {
                         popUpTo(Routes.HOME)
+                        launchSingleTop = true
                     }
                 }
             )
