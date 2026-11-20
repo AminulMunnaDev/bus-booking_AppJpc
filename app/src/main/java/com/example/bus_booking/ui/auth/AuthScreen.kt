@@ -132,11 +132,12 @@ fun LoginScreen(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
+            enabled = !uiState.isLoading,
             shape = RoundedCornerShape(10.dp),
             colors = busGoFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -149,7 +150,6 @@ fun LoginScreen(
                 Icon(
                     imageVector = Icons.Outlined.Lock,
                     contentDescription = null,
-                    tint = Slate500
                 )
             },
             trailingIcon = {
@@ -161,10 +161,10 @@ fun LoginScreen(
                             Icons.Outlined.Visibility
                         },
                         contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                        tint = Slate500
                     )
                 }
             },
+            enabled = !uiState.isLoading,
             singleLine = true,
             visualTransformation = if (passwordVisible) {
                 VisualTransformation.None
@@ -185,7 +185,7 @@ fun LoginScreen(
             colors = busGoFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+
         )
 
         ErrorBanner(message = uiState.errorMessage)
@@ -239,7 +239,6 @@ fun RegisterScreen(
                 Icon(
                     imageVector = Icons.Outlined.Person,
                     contentDescription = null,
-                    tint = Slate500
                 )
             },
             singleLine = true,
@@ -250,11 +249,12 @@ fun RegisterScreen(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
+            enabled = !uiState.isLoading,
             shape = RoundedCornerShape(10.dp),
             colors = busGoFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -267,7 +267,6 @@ fun RegisterScreen(
                 Icon(
                     imageVector = Icons.Outlined.Email,
                     contentDescription = null,
-                    tint = Slate500
                 )
             },
             singleLine = true,
@@ -275,6 +274,7 @@ fun RegisterScreen(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
             ),
+            enabled = !uiState.isLoading,
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
@@ -282,7 +282,7 @@ fun RegisterScreen(
             colors = busGoFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -295,9 +295,10 @@ fun RegisterScreen(
                 Icon(
                     imageVector = Icons.Outlined.Phone,
                     contentDescription = null,
-                    tint = Slate500
+
                 )
             },
+            enabled = !uiState.isLoading,
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Phone,
@@ -310,7 +311,7 @@ fun RegisterScreen(
             colors = busGoFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -318,14 +319,15 @@ fun RegisterScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password (min 6 chars)") },
+            label = { Text("Password (min 6)") },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Lock,
                     contentDescription = null,
-                    tint = Slate500
+
                 )
             },
+            enabled = !uiState.isLoading,
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
@@ -335,7 +337,7 @@ fun RegisterScreen(
                             Icons.Outlined.Visibility
                         },
                         contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                        tint = Slate500
+
                     )
                 }
             },
@@ -359,7 +361,7 @@ fun RegisterScreen(
             colors = busGoFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+
         )
 
         ErrorBanner(message = uiState.errorMessage)
@@ -612,11 +614,18 @@ private fun BusGoPrimaryButton(
 private fun busGoFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = Color.White,
     unfocusedContainerColor = Color.White,
+    disabledContainerColor = Slate50,
     focusedBorderColor = Green600,
     unfocusedBorderColor = Slate300,
+    disabledBorderColor = Slate200,
     focusedLabelColor = Green700,
     unfocusedLabelColor = Slate500,
+    focusedLeadingIconColor = Green600,
+    unfocusedLeadingIconColor = Slate500,
     cursorColor = Green600,
     focusedTextColor = Slate900,
-    unfocusedTextColor = Slate900
+    unfocusedTextColor = Slate900,
+    focusedTrailingIconColor = Slate600,
+    unfocusedTrailingIconColor = Slate500
+
 )

@@ -501,9 +501,7 @@ fun SeatSelectionScreen(
                                     singleLine = true,
                                     shape = RoundedCornerShape(10.dp),
                                     colors = seatFieldColors(),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp)
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -521,9 +519,7 @@ fun SeatSelectionScreen(
                                     singleLine = true,
                                     shape = RoundedCornerShape(10.dp),
                                     colors = seatFieldColors(),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp)
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }
@@ -830,11 +826,15 @@ private fun SummaryRow(
 private fun seatFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = Color.White,
     unfocusedContainerColor = Color.White,
+    disabledContainerColor = Slate50,
     focusedBorderColor = Green600,
     unfocusedBorderColor = Slate300,
+    disabledBorderColor = Slate200,
     focusedLabelColor = Green700,
     unfocusedLabelColor = Slate500,
+    focusedLeadingIconColor = Green600,
+    unfocusedLeadingIconColor = Slate500,
     cursorColor = Green600,
     focusedTextColor = Slate900,
-    unfocusedTextColor = Slate900,
+    unfocusedTextColor = Slate900
 )

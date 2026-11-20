@@ -101,7 +101,19 @@ import com.example.bus_booking.ui.theme.Slate500
 import com.example.bus_booking.ui.theme.Slate600
 import com.example.bus_booking.ui.theme.Slate900
 import org.koin.androidx.compose.koinViewModel
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeSearchScreen(
     onSearchComplete: () -> Unit,
@@ -110,7 +122,38 @@ fun HomeSearchScreen(
     viewModel: SearchViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var fromExpanded by remember { mutableStateOf(false) }
+    var toExpanded by remember { mutableStateOf(false) }
     var swapRotation by remember { mutableStateOf(0f) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var localValidationError by remember { mutableStateOf<String?>(null) }
+
+    val activeError = localValidationError ?: uiState.errorMessage
+
+    val isSameCity = remember(uiState.fromCity, uiState.toCity) {
+        val from = uiState.fromCity.trim()
+        val to = uiState.toCity.trim()
+        from.isNotEmpty() && to.isNotEmpty() && from.equals(to, ignoreCase = true)
+    }
+
+    fun validateAndSearch() {
+        val from = uiState.fromCity.trim()
+        val to = uiState.toCity.trim()
+        if (from.isNotEmpty() && to.isNotEmpty() && from.equals(to, ignoreCase = true)) {
+            val msg = "Origin and destination cannot be the same city ($from)."
+            localValidationError = msg
+            scope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(msg)
+            }
+            return
+        }
+        localValidationError = null
+        viewModel.searchTrips(onSuccessNavigate = onSearchComplete)
+    }
+
     val animatedSwapRotation by animateFloatAsState(
         targetValue = swapRotation,
         animationSpec = spring(
@@ -123,6 +166,31 @@ fun HomeSearchScreen(
     LaunchedEffect(Unit) {
         if (uiState.cities.isEmpty() && uiState.popularRoutes.isEmpty() && !uiState.isLoadingHome) {
             viewModel.loadHomeData()
+        }
+    }
+
+    // Filtered city options pulled directly from backend uiState.cities
+    val fromCityOptions = remember(uiState.cities, uiState.fromCity, uiState.toCity) {
+        val query = uiState.fromCity.trim()
+        val available = uiState.cities.filterNot {
+            it.name.equals(uiState.toCity.trim(), ignoreCase = true)
+        }
+        if (query.isBlank() || available.any { it.name.equals(query, ignoreCase = true) }) {
+            available
+        } else {
+            available.filter { it.name.contains(query, ignoreCase = true) }
+        }
+    }
+
+    val toCityOptions = remember(uiState.cities, uiState.fromCity, uiState.toCity) {
+        val query = uiState.toCity.trim()
+        val available = uiState.cities.filterNot {
+            it.name.equals(uiState.fromCity.trim(), ignoreCase = true)
+        }
+        if (query.isBlank() || available.any { it.name.equals(query, ignoreCase = true) }) {
+            available
+        } else {
+            available.filter { it.name.contains(query, ignoreCase = true) }
         }
     }
 
@@ -192,7 +260,7 @@ fun HomeSearchScreen(
                                         tint = Color.White
                                     )
                                 }
-                                IconButton(onClick = onLogout) {
+                                IconButton(onClick = { showLogoutDialog = true }) {
                                     Icon(
                                         imageVector = Icons.Outlined.Logout,
                                         contentDescription = "Logout",
@@ -219,64 +287,24 @@ fun HomeSearchScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
-                            Text(
-                                text = "Search Buses",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Slate900
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    OutlinedTextField(
-                                        value = uiState.fromCity,
-                                        onValueChange = viewModel::updateFromCity,
-                                        label = { Text("From City") },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Outlined.LocationOn,
-                                                contentDescription = null,
-                                                tint = Green600
-                                            )
-                                        },
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = searchFieldColors(),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(56.dp)
-                                    )
-
-                                    OutlinedTextField(
-                                        value = uiState.toCity,
-                                        onValueChange = viewModel::updateToCity,
-                                        label = { Text("To City") },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Outlined.LocationOn,
-                                                contentDescription = null,
-                                                tint = Slate500
-                                            )
-                                        },
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = searchFieldColors(),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(56.dp)
-                                    )
-                                }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Search Buses",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Slate900
+                                )
 
                                 Surface(
                                     shape = CircleShape,
                                     color = Green50,
                                     border = BorderStroke(1.dp, Green100),
                                     modifier = Modifier
-                                        .align(Alignment.CenterEnd)
-                                        .padding(end = 12.dp)
-                                        .size(36.dp)
+                                        .size(34.dp)
                                         .clip(CircleShape)
                                         .clickable {
                                             swapRotation += 180f
@@ -299,6 +327,128 @@ fun HomeSearchScreen(
                                 }
                             }
 
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // From City Dropdown (populated from backend cities)
+                            ExposedDropdownMenuBox(
+                                expanded = fromExpanded,
+                                onExpandedChange = { fromExpanded = it },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedTextField(
+                                    value = uiState.fromCity,
+                                    onValueChange = {
+                                        viewModel.updateFromCity(it)
+                                        fromExpanded = true
+                                    },
+                                    label = { Text("From City") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.LocationOn,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = fromExpanded)
+                                    },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = searchFieldColors(),
+                                    modifier = Modifier
+                                        .menuAnchor(MenuAnchorType.PrimaryEditable)
+                                        .fillMaxWidth()
+                                )
+
+                                if (fromCityOptions.isNotEmpty()) {
+                                    ExposedDropdownMenu(
+                                        expanded = fromExpanded,
+                                        onDismissRequest = { fromExpanded = false },
+                                        containerColor = Color.White,
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, Slate200)
+                                    ) {
+                                        fromCityOptions.forEach { city ->
+                                            val isCurrent = city.name.equals(uiState.fromCity, ignoreCase = true)
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        text = city.name,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                                                        color = if (isCurrent) Green700 else Slate900
+                                                    )
+                                                },
+                                                onClick = {
+                                                    viewModel.updateFromCity(city.name)
+                                                    fromExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // To City Dropdown (populated from backend cities)
+                            ExposedDropdownMenuBox(
+                                expanded = toExpanded,
+                                onExpandedChange = { toExpanded = it },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedTextField(
+                                    value = uiState.toCity,
+                                    onValueChange = {
+                                        viewModel.updateToCity(it)
+                                        toExpanded = true
+                                    },
+                                    label = { Text("To City") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.LocationOn,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = toExpanded)
+                                    },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = searchFieldColors(),
+                                    modifier = Modifier
+                                        .menuAnchor(MenuAnchorType.PrimaryEditable)
+                                        .fillMaxWidth()
+                                )
+
+                                if (toCityOptions.isNotEmpty()) {
+                                    ExposedDropdownMenu(
+                                        expanded = toExpanded,
+                                        onDismissRequest = { toExpanded = false },
+                                        containerColor = Color.White,
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, Slate200)
+                                    ) {
+                                        toCityOptions.forEach { city ->
+                                            val isCurrent = city.name.equals(uiState.toCity, ignoreCase = true)
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        text = city.name,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                                                        color = if (isCurrent) Green700 else Slate900
+                                                    )
+                                                },
+                                                onClick = {
+                                                    viewModel.updateToCity(city.name)
+                                                    toExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
                             Spacer(modifier = Modifier.height(10.dp))
 
                             OutlinedTextField(
@@ -308,67 +458,14 @@ fun HomeSearchScreen(
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Outlined.CalendarMonth,
-                                        contentDescription = null,
-                                        tint = Slate500
+                                        contentDescription = null
                                     )
                                 },
                                 singleLine = true,
                                 shape = RoundedCornerShape(10.dp),
                                 colors = searchFieldColors(),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
+                                modifier = Modifier.fillMaxWidth()
                             )
-
-                            if (uiState.cities.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(10.dp))
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    items(uiState.cities) { city ->
-                                        val isSelected =
-                                            city.name.equals(uiState.fromCity, ignoreCase = true) ||
-                                                    city.name.equals(
-                                                        uiState.toCity,
-                                                        ignoreCase = true
-                                                    )
-                                        Surface(
-                                            shape = RoundedCornerShape(999.dp),
-                                            color = if (isSelected) Green100 else Slate100,
-                                            border = BorderStroke(
-                                                1.dp,
-                                                if (isSelected) Green600.copy(alpha = 0.4f) else Slate200
-                                            ),
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(999.dp))
-                                                .clickable {
-                                                    if (uiState.fromCity.isBlank()) {
-                                                        viewModel.updateFromCity(city.name)
-                                                    } else if (
-                                                        uiState.toCity.isBlank() &&
-                                                        !uiState.fromCity.equals(
-                                                            city.name,
-                                                            ignoreCase = true
-                                                        )
-                                                    ) {
-                                                        viewModel.updateToCity(city.name)
-                                                    } else {
-                                                        viewModel.updateFromCity(city.name)
-                                                    }
-                                                }
-                                        ) {
-                                            Text(
-                                                text = city.name,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Medium,
-                                                color = if (isSelected) Green800 else Slate600,
-                                                modifier = Modifier.padding(
-                                                    horizontal = 10.dp,
-                                                    vertical = 5.dp
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-                            }
 
                             AnimatedVisibility(
                                 visible = !uiState.errorMessage.isNullOrBlank(),
@@ -486,6 +583,53 @@ fun HomeSearchScreen(
                 }
             }
         }
+    }
+
+    // Logout confirmation dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            shape = RoundedCornerShape(12.dp),
+            containerColor = Color.White,
+            title = {
+                Text(
+                    text = "Confirm Logout",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Slate900
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to log out of your BusGo account?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Slate600
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Red600,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("Logout", fontWeight = FontWeight.Medium)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Slate600)
+                ) {
+                    Text("Cancel", fontWeight = FontWeight.Medium)
+                }
+            }
+        )
     }
 }
 
@@ -1029,11 +1173,17 @@ private fun SearchPrimaryButton(
 private fun searchFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = Color.White,
     unfocusedContainerColor = Color.White,
+    disabledContainerColor = Slate50,
     focusedBorderColor = Green600,
     unfocusedBorderColor = Slate300,
+    disabledBorderColor = Slate200,
     focusedLabelColor = Green700,
     unfocusedLabelColor = Slate500,
+    focusedLeadingIconColor = Green600,
+    unfocusedLeadingIconColor = Slate500,
     cursorColor = Green600,
     focusedTextColor = Slate900,
-    unfocusedTextColor = Slate900
+    unfocusedTextColor = Slate900,
+    focusedTrailingIconColor = Slate600,
+    unfocusedTrailingIconColor = Slate600
 )

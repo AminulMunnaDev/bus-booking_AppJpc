@@ -33,7 +33,7 @@ import org.koin.dsl.module
 
 
 // Defaults to 10.0.2.2 for Android Emulator connecting to host localhost:5000
-private const val BASE_API_URL = "http://192.168.0.109:5000/api/"
+private const val BASE_API_URL = "http://192.168.0.102:5000/api/"
 
 val networkModule = module {
     single {
